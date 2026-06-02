@@ -6,8 +6,8 @@ import { selectStats, useRecraftStore } from "@/lib/recraft-store";
 import { cn } from "@/lib/utils";
 
 export function AchievementsDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
-  const { unlockedAchievements } = useRecraftStore();
-  const stats = useRecraftStore(selectStats);
+  const unlockedAchievements = useRecraftStore((s) => s.unlockedAchievements);
+  const stats = useRecraftStore(useShallow(selectStats));
   const categories = ["Descoberta", "Sustentabilidade", "Conhecimento", "Progressão", "Especiais"] as const;
 
   return (
