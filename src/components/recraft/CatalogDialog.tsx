@@ -24,8 +24,9 @@ export function CatalogDialog({ open, onOpenChange, onSelect, onRequestHint }: {
   onSelect: (id: string) => void;
   onRequestHint: (id: string) => void;
 }) {
-  const { discovered, favorites } = useRecraftStore();
-  const stats = useRecraftStore(selectStats);
+  const discovered = useRecraftStore((s) => s.discovered);
+  const favorites = useRecraftStore((s) => s.favorites);
+  const stats = useRecraftStore(useShallow(selectStats));
   const [filter, setFilter] = useState<(typeof FILTERS)[number]["id"]>("all");
   const [q, setQ] = useState("");
 
