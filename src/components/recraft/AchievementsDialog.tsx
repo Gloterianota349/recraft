@@ -3,6 +3,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Progress } from "@/components/ui/progress";
 import { ACHIEVEMENTS, RARITY_COLORS } from "@/lib/recraft-data";
 import { selectStats, useRecraftStore } from "@/lib/recraft-store";
+import { useShallow } from "zustand/react/shallow";
 import { cn } from "@/lib/utils";
 
 export function AchievementsDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
