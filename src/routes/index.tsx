@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { ELEMENTS, getElement } from "@/lib/recraft-data";
 import { selectStats, useRecraftStore } from "@/lib/recraft-store";
+import { useShallow } from "zustand/react/shallow";
 import { ElementChip } from "@/components/recraft/ElementChip";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,8 +27,9 @@ export const Route = createFileRoute("/")({
 });
 
 function GamePage() {
-  const { discovered, combine } = useRecraftStore();
-  const stats = useRecraftStore(selectStats);
+  const discovered = useRecraftStore((s) => s.discovered);
+  const combine = useRecraftStore((s) => s.combine);
+  const stats = useRecraftStore(useShallow(selectStats));
   const [slotA, setSlotA] = useState<string | null>(null);
   const [slotB, setSlotB] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<{ kind: "ok" | "dup" | "fail"; text: string; emoji?: string } | null>(null);
@@ -238,7 +240,7 @@ function InventoryGroup({ title, items, onClick, selected, onInfo }: {
 }
 
 function LastDiscoveries({ onSelect }: { onSelect: (id: string) => void }) {
-  const { discovered } = useRecraftStore();
+  const discovered = useRecraftStore((s) => s.discovered);
   const recent = Object.values(discovered).filter((d) => d.at > 0).sort((a, b) => b.at - a.at).slice(0, 6);
   if (recent.length === 0) return null;
   return (
@@ -255,7 +257,8 @@ function LastDiscoveries({ onSelect }: { onSelect: (id: string) => void }) {
 }
 
 function NotificationStack() {
-  const { notifications, dismissNotification } = useRecraftStore();
+  const notifications = useRecraftStore((s) => s.notifications);
+  const dismissNotification = useRecraftStore((s) => s.dismissNotification);
   useEffect(() => {
     const ids = notifications.map((n) => n.id);
     const timers = ids.map((id) => setTimeout(() => dismissNotification(id), 5500));
