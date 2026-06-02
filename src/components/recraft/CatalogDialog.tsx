@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { ELEMENTS, type ElementDef } from "@/lib/recraft-data";
 import { selectStats, useRecraftStore } from "@/lib/recraft-store";
 import { useMemo, useState } from "react";
+import { useShallow } from "zustand/react/shallow";
 import { cn } from "@/lib/utils";
 
 const FILTERS = [
