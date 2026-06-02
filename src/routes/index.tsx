@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ELEMENTS, getElement } from "@/lib/recraft-data";
 import { selectStats, useRecraftStore } from "@/lib/recraft-store";
 import { useShallow } from "zustand/react/shallow";
@@ -13,6 +13,8 @@ import { CatalogDialog } from "@/components/recraft/CatalogDialog";
 import { AchievementsDialog } from "@/components/recraft/AchievementsDialog";
 import { ItemDetailDialog } from "@/components/recraft/ItemDetailDialog";
 import { HintDialog } from "@/components/recraft/HintDialog";
+import { cn } from "@/lib/utils";
+import { ChevronLeft, ChevronRight, Trash2, Sparkles } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -26,80 +28,165 @@ export const Route = createFileRoute("/")({
   component: GamePage,
 });
 
+interface BoardItem {
+  iid: string;
+  id: string;
+  x: number;
+  y: number;
+}
+
+type DragState =
+  | { source: "sidebar"; elementId: string; offX: number; offY: number; cx: number; cy: number }
+  | { source: "board"; iid: string; elementId: string; offX: number; offY: number; cx: number; cy: number }
+  | null;
+
+const ITEM_W = 130;
+const ITEM_H = 48;
+
 function GamePage() {
   const discovered = useRecraftStore((s) => s.discovered);
   const combine = useRecraftStore((s) => s.combine);
   const stats = useRecraftStore(useShallow(selectStats));
-  const [slotA, setSlotA] = useState<string | null>(null);
-  const [slotB, setSlotB] = useState<string | null>(null);
-  const [feedback, setFeedback] = useState<{ kind: "ok" | "dup" | "fail"; text: string; emoji?: string } | null>(null);
+
   const [search, setSearch] = useState("");
   const [catalogOpen, setCatalogOpen] = useState(false);
   const [achOpen, setAchOpen] = useState(false);
   const [detailId, setDetailId] = useState<string | null>(null);
   const [hintId, setHintId] = useState<string | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [board, setBoard] = useState<BoardItem[]>([]);
+  const [drag, setDrag] = useState<DragState>(null);
+  const [hoverIid, setHoverIid] = useState<string | null>(null);
+  const [flash, setFlash] = useState<{ iid: string; kind: "ok" | "fail" } | null>(null);
+  const [banner, setBanner] = useState<string | null>(null);
 
-  const inventory = useMemo(() => {
-    return ELEMENTS.filter((e) => discovered[e.id]).filter((e) => !search || e.name.toLowerCase().includes(search.toLowerCase()));
-  }, [discovered, search]);
+  const canvasRef = useRef<HTMLDivElement>(null);
+  const iidRef = useRef(0);
+  const nextIid = () => `b${++iidRef.current}`;
 
-  const tryCombine = () => {
-    if (!slotA || !slotB) return;
-    const res = combine(slotA, slotB);
-    if (!res.ok) {
-      setFeedback({ kind: "fail", text: "Combinação não funcionou. Continue experimentando!", emoji: "❌" });
-    } else if (res.alreadyKnown) {
-      const def = getElement(res.output!);
-      setFeedback({ kind: "dup", text: `Já descoberto: ${def?.name}`, emoji: def?.emoji });
-    } else {
-      const def = getElement(res.output!);
-      setFeedback({ kind: "ok", text: `Descobriu: ${def?.name}!`, emoji: def?.emoji });
-    }
-    setSlotA(null);
-    setSlotB(null);
-  };
+  const inventory = useMemo(
+    () =>
+      ELEMENTS.filter((e) => discovered[e.id]).filter(
+        (e) => !search || e.name.toLowerCase().includes(search.toLowerCase()),
+      ),
+    [discovered, search],
+  );
+
+  const toCanvas = useCallback((clientX: number, clientY: number) => {
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (!rect) return { x: 0, y: 0, inside: false };
+    return {
+      x: clientX - rect.left,
+      y: clientY - rect.top,
+      inside:
+        clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom,
+    };
+  }, []);
+
+  const hitTest = useCallback(
+    (clientX: number, clientY: number, ignoreIid?: string) => {
+      const { x, y, inside } = toCanvas(clientX, clientY);
+      if (!inside) return null;
+      for (let i = board.length - 1; i >= 0; i--) {
+        const b = board[i];
+        if (b.iid === ignoreIid) continue;
+        if (x >= b.x && x <= b.x + ITEM_W && y >= b.y && y <= b.y + ITEM_H) return b;
+      }
+      return null;
+    },
+    [board, toCanvas],
+  );
 
   useEffect(() => {
-    if (!feedback) return;
-    const t = setTimeout(() => setFeedback(null), 3200);
-    return () => clearTimeout(t);
-  }, [feedback]);
+    if (!drag) return;
+    const onMove = (e: PointerEvent) => {
+      setDrag((d) => (d ? { ...d, cx: e.clientX, cy: e.clientY } : d));
+      const t = hitTest(e.clientX, e.clientY, drag.source === "board" ? drag.iid : undefined);
+      setHoverIid(t?.iid ?? null);
+    };
+    const onUp = (e: PointerEvent) => {
+      const { x, y, inside } = toCanvas(e.clientX, e.clientY);
+      const target = hitTest(e.clientX, e.clientY, drag.source === "board" ? drag.iid : undefined);
 
-  const handleElementClick = (id: string) => {
-    if (!slotA) setSlotA(id);
-    else if (!slotB) setSlotB(id);
-    else { setSlotA(id); setSlotB(null); }
-  };
-
-  const renderSlot = (val: string | null, onClear: () => void, label: string) => {
-    const el = val ? getElement(val) : null;
-    return (
-      <div className="flex min-h-32 flex-1 flex-col items-center justify-center rounded-2xl border-2 border-dashed border-primary/40 bg-card/80 p-4 backdrop-blur"
-        onDragOver={(e) => e.preventDefault()}
-        onDrop={(e) => {
-          const id = e.dataTransfer.getData("text/recraft-id");
-          if (id && discovered[id]) {
-            if (label === "A") setSlotA(id); else setSlotB(id);
+      if (target) {
+        const res = combine(drag.elementId, target.id);
+        if (res.ok && res.output) {
+          const outId = res.output;
+          setBoard((prev) => {
+            const removed = prev.filter(
+              (b) => b.iid !== target.iid && (drag.source !== "board" || b.iid !== drag.iid),
+            );
+            const newItem: BoardItem = { iid: nextIid(), id: outId, x: target.x, y: target.y };
+            setTimeout(() => setFlash({ iid: newItem.iid, kind: "ok" }), 0);
+            return [...removed, newItem];
+          });
+          if (!res.alreadyKnown) {
+            setBanner(outId);
+            setTimeout(() => setBanner(null), 4500);
           }
-        }}
-      >
-        {el ? (
-          <button onClick={onClear} className="flex flex-col items-center gap-1">
-            <span className="text-5xl">{el.emoji}</span>
-            <span className="font-semibold">{el.name}</span>
-            <span className="text-xs text-muted-foreground">clique para remover</span>
-          </button>
-        ) : (
-          <span className="text-sm text-muted-foreground">Slot {label}: clique ou arraste</span>
-        )}
-      </div>
-    );
+        } else {
+          setFlash({ iid: target.iid, kind: "fail" });
+        }
+      } else if (inside) {
+        const px = Math.max(0, Math.min(x - drag.offX, (canvasRef.current?.clientWidth ?? 1) - ITEM_W));
+        const py = Math.max(0, Math.min(y - drag.offY, (canvasRef.current?.clientHeight ?? 1) - ITEM_H));
+        if (drag.source === "sidebar") {
+          setBoard((prev) => [...prev, { iid: nextIid(), id: drag.elementId, x: px, y: py }]);
+        } else {
+          setBoard((prev) => prev.map((b) => (b.iid === drag.iid ? { ...b, x: px, y: py } : b)));
+        }
+      } else if (drag.source === "board") {
+        setBoard((prev) => prev.filter((b) => b.iid !== drag.iid));
+      }
+      setDrag(null);
+      setHoverIid(null);
+    };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    return () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+    };
+  }, [drag, hitTest, combine, toCanvas]);
+
+  useEffect(() => {
+    if (!flash) return;
+    const t = setTimeout(() => setFlash(null), 700);
+    return () => clearTimeout(t);
+  }, [flash]);
+
+  const startSidebarDrag = (e: React.PointerEvent, elementId: string) => {
+    e.preventDefault();
+    setDrag({
+      source: "sidebar",
+      elementId,
+      offX: ITEM_W / 2,
+      offY: ITEM_H / 2,
+      cx: e.clientX,
+      cy: e.clientY,
+    });
   };
+
+  const startBoardDrag = (e: React.PointerEvent, b: BoardItem) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const { x, y } = toCanvas(e.clientX, e.clientY);
+    setDrag({
+      source: "board",
+      iid: b.iid,
+      elementId: b.id,
+      offX: x - b.x,
+      offY: y - b.y,
+      cx: e.clientX,
+      cy: e.clientY,
+    });
+  };
+
+  const dragEl = drag ? getElement(drag.elementId) : null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-secondary/30 to-background">
-      {/* Header */}
-      <header className="sticky top-0 z-30 border-b bg-card/80 backdrop-blur">
+    <div className="flex h-screen w-screen flex-col overflow-hidden bg-gradient-to-br from-background via-secondary/30 to-background">
+      <header className="z-30 shrink-0 border-b bg-card/80 backdrop-blur">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-3 px-4 py-3">
           <div className="flex items-center gap-2">
             <span className="text-3xl">♻️</span>
@@ -114,88 +201,138 @@ function GamePage() {
             <Badge variant="secondary" className="gap-1">🏆 {stats.achievementsUnlocked}/{stats.achievementsTotal}</Badge>
             <Button size="sm" variant="outline" onClick={() => setCatalogOpen(true)}>📖 Catálogo</Button>
             <Button size="sm" variant="outline" onClick={() => setAchOpen(true)}>🏆 Conquistas</Button>
+            <Button size="sm" variant="outline" onClick={() => setBoard([])} disabled={board.length === 0}>
+              <Trash2 className="mr-1 h-3.5 w-3.5" /> Limpar
+            </Button>
           </div>
         </div>
         <Progress value={stats.progressPct} className="h-1 rounded-none" />
       </header>
 
-      <main className="mx-auto grid max-w-7xl gap-6 px-4 py-6 lg:grid-cols-[1fr_360px]">
-        {/* Workbench */}
-        <section className="space-y-4">
-          <div className="rounded-2xl border bg-card p-5 shadow-sm">
-            <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-lg font-semibold">🧪 Bancada de Criação</h2>
-              <p className="text-xs text-muted-foreground">Combine 2 elementos para descobrir algo novo</p>
+      <main className="relative flex min-h-0 flex-1">
+        <div
+          ref={canvasRef}
+          className="relative flex-1 select-none overflow-hidden"
+          style={{
+            backgroundImage:
+              "radial-gradient(circle, color-mix(in oklab, var(--foreground) 10%, transparent) 1px, transparent 1px)",
+            backgroundSize: "22px 22px",
+          }}
+        >
+          {board.length === 0 && !drag && (
+            <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center text-muted-foreground">
+              <Sparkles className="mb-3 h-10 w-10 opacity-50" />
+              <p className="text-lg font-semibold">Sua bancada está vazia</p>
+              <p className="max-w-sm text-sm">
+                Arraste itens do inventário para cá. Solte um item sobre outro para combiná-los.
+              </p>
+              <p className="mt-2 text-xs">
+                Dica inicial: <strong>Garrafa PET</strong> + <strong>Tesoura</strong>
+              </p>
             </div>
-            <div className="flex flex-col items-stretch gap-3 md:flex-row md:items-center">
-              {renderSlot(slotA, () => setSlotA(null), "A")}
-              <span className="text-center text-3xl font-bold text-primary">+</span>
-              {renderSlot(slotB, () => setSlotB(null), "B")}
-              <span className="text-center text-3xl font-bold text-primary">=</span>
-              <Button size="lg" onClick={tryCombine} disabled={!slotA || !slotB} className="h-32 w-full md:w-40">
-                ⚗️<br />Combinar
-              </Button>
-            </div>
-            {feedback && (
-              <div className={
-                "mt-4 flex items-center gap-2 rounded-lg border-2 px-4 py-3 text-sm font-medium animate-in fade-in slide-in-from-bottom-2 " +
-                (feedback.kind === "ok" ? "border-emerald-400 bg-emerald-50 text-emerald-900" :
-                 feedback.kind === "dup" ? "border-sky-400 bg-sky-50 text-sky-900" :
-                 "border-rose-300 bg-rose-50 text-rose-900")
-              }>
-                {feedback.emoji && <span className="text-2xl">{feedback.emoji}</span>}
-                <span>{feedback.text}</span>
-                {feedback.kind === "ok" && (
-                  <Button size="sm" variant="outline" className="ml-auto" onClick={() => {
-                    const last = useRecraftStore.getState().notifications.slice(-1)[0];
-                    // open detail for last discovery
-                    const lastDisc = Object.values(useRecraftStore.getState().discovered).sort((a, b) => b.at - a.at)[0];
-                    if (lastDisc) setDetailId(lastDisc.id);
-                    void last;
-                  }}>
-                    Ver detalhes
-                  </Button>
-                )}
-              </div>
-            )}
-          </div>
+          )}
 
-          {/* Onboarding */}
-          <div className="rounded-2xl border border-dashed bg-secondary/40 p-4 text-sm">
-            <p className="font-semibold">💡 Como jogar</p>
-            <p className="text-muted-foreground">
-              Clique em dois elementos do inventário ao lado e depois em <strong>Combinar</strong>. Algumas combinações geram componentes (como <em>Tiras de PET</em>) que servem de base para objetos finais (<em>Vassoura PET</em>, <em>Horta Vertical</em>...). Não sabe por onde começar? Tente <em>Garrafa PET + Tesoura</em>.
+          {board.map((b) => {
+            const el = getElement(b.id);
+            if (!el) return null;
+            const isHover = hoverIid === b.iid;
+            const isFlash = flash?.iid === b.iid;
+            const isDragged = drag?.source === "board" && drag.iid === b.iid;
+            return (
+              <div
+                key={b.iid}
+                onPointerDown={(e) => startBoardDrag(e, b)}
+                onDoubleClick={(e) => {
+                  e.stopPropagation();
+                  setDetailId(b.id);
+                }}
+                className={cn(
+                  "absolute touch-none cursor-grab active:cursor-grabbing transition-transform",
+                  isDragged && "opacity-30",
+                  isHover && "scale-110 rounded-xl ring-4 ring-primary ring-offset-2",
+                  isFlash && flash?.kind === "ok" && "scale-110",
+                  isFlash && flash?.kind === "fail" && "animate-pulse",
+                )}
+                style={{ left: b.x, top: b.y }}
+              >
+                <ElementChip element={el} size="md" />
+              </div>
+            );
+          })}
+
+          {banner && (
+            <button
+              onClick={() => setDetailId(banner)}
+              className="absolute bottom-4 left-1/2 z-10 -translate-x-1/2 animate-in slide-in-from-bottom-4 rounded-full border-2 border-emerald-400 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-900 shadow-lg hover:bg-emerald-100"
+            >
+              ✨ Descoberto: {getElement(banner)?.name} — ver detalhes
+            </button>
+          )}
+
+          <button
+            onClick={() => setSidebarOpen((v) => !v)}
+            className={cn(
+              "absolute top-1/2 z-20 -translate-y-1/2 rounded-l-lg border bg-card p-1.5 shadow-md transition-all hover:bg-accent",
+              sidebarOpen ? "right-[340px]" : "right-0",
+            )}
+            title={sidebarOpen ? "Recolher inventário" : "Abrir inventário"}
+          >
+            {sidebarOpen ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+          </button>
+        </div>
+
+        <aside
+          className={cn(
+            "shrink-0 overflow-hidden border-l bg-card transition-[width] duration-300 ease-out",
+            sidebarOpen ? "w-[340px]" : "w-0",
+          )}
+        >
+          <div className="flex h-full w-[340px] flex-col p-4">
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-lg font-semibold">🧺 Inventário</h2>
+              <span className="text-xs text-muted-foreground">{inventory.length} itens</span>
+            </div>
+            <Input
+              placeholder="🔍 Filtrar…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="mb-3"
+            />
+            <ScrollArea className="flex-1 pr-2">
+              <InvGroup title="Resíduos" items={inventory.filter((e) => e.type === "residuo")} onPick={startSidebarDrag} onInfo={setDetailId} />
+              <InvGroup title="Ferramentas" items={inventory.filter((e) => e.type === "ferramenta")} onPick={startSidebarDrag} onInfo={setDetailId} />
+              <InvGroup title="Componentes" items={inventory.filter((e) => e.type === "componente")} onPick={startSidebarDrag} onInfo={setDetailId} />
+              <InvGroup title="Objetos Finais" items={inventory.filter((e) => e.type === "final")} onPick={startSidebarDrag} onInfo={setDetailId} />
+            </ScrollArea>
+            <p className="mt-3 border-t pt-3 text-[11px] leading-relaxed text-muted-foreground">
+              Arraste um item para a bancada. Solte um item <strong>sobre outro</strong> para combinar. Solte <strong>fora da bancada</strong> para descartar. Clique duplo em um item da bancada para detalhes.
             </p>
           </div>
-
-          {/* Last discoveries */}
-          <LastDiscoveries onSelect={setDetailId} />
-        </section>
-
-        {/* Inventory */}
-        <aside className="rounded-2xl border bg-card p-4 shadow-sm">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-lg font-semibold">🧺 Inventário</h2>
-            <span className="text-xs text-muted-foreground">{inventory.length} itens</span>
-          </div>
-          <Input placeholder="🔍 Filtrar…" value={search} onChange={(e) => setSearch(e.target.value)} className="mb-3" />
-          <ScrollArea className="h-[60vh] pr-2">
-            <InventoryGroup title="Resíduos" items={inventory.filter((e) => e.type === "residuo")} onClick={handleElementClick} selected={[slotA, slotB]} />
-            <InventoryGroup title="Ferramentas" items={inventory.filter((e) => e.type === "ferramenta")} onClick={handleElementClick} selected={[slotA, slotB]} />
-            <InventoryGroup title="Componentes" items={inventory.filter((e) => e.type === "componente")} onClick={handleElementClick} selected={[slotA, slotB]} onInfo={setDetailId} />
-            <InventoryGroup title="Objetos Finais" items={inventory.filter((e) => e.type === "final")} onClick={handleElementClick} selected={[slotA, slotB]} onInfo={setDetailId} />
-          </ScrollArea>
         </aside>
+
+        {drag && dragEl && (
+          <div
+            className="pointer-events-none fixed z-50 -translate-x-1/2 -translate-y-1/2 opacity-90"
+            style={{ left: drag.cx, top: drag.cy }}
+          >
+            <div className="scale-110 drop-shadow-xl">
+              <ElementChip element={dragEl} size="md" />
+            </div>
+          </div>
+        )}
       </main>
 
-      <footer className="mx-auto max-w-7xl px-4 pb-8 text-center text-xs text-muted-foreground">
-        "Transforme resíduos em recursos. Descubra novas possibilidades para o planeta."
-      </footer>
-
-      {/* Notifications */}
       <NotificationStack />
 
-      <CatalogDialog open={catalogOpen} onOpenChange={setCatalogOpen} onSelect={(id) => { setDetailId(id); setCatalogOpen(false); }} onRequestHint={(id) => setHintId(id)} />
+      <CatalogDialog
+        open={catalogOpen}
+        onOpenChange={setCatalogOpen}
+        onSelect={(id) => {
+          setDetailId(id);
+          setCatalogOpen(false);
+        }}
+        onRequestHint={(id) => setHintId(id)}
+      />
       <AchievementsDialog open={achOpen} onOpenChange={setAchOpen} />
       <ItemDetailDialog id={detailId} open={!!detailId} onOpenChange={(v) => !v && setDetailId(null)} />
       <HintDialog id={hintId} open={!!hintId} onOpenChange={(v) => !v && setHintId(null)} />
@@ -203,54 +340,43 @@ function GamePage() {
   );
 }
 
-function InventoryGroup({ title, items, onClick, selected, onInfo }: {
+function InvGroup({
+  title,
+  items,
+  onPick,
+  onInfo,
+}: {
   title: string;
-  items: ReturnType<typeof getElement>[] | { id: string; emoji: string; name: string; type: "residuo" | "ferramenta" | "componente" | "final" }[];
-  onClick: (id: string) => void;
-  selected: (string | null)[];
-  onInfo?: (id: string) => void;
+  items: { id: string; emoji: string; name: string; type: "residuo" | "ferramenta" | "componente" | "final" }[];
+  onPick: (e: React.PointerEvent, id: string) => void;
+  onInfo: (id: string) => void;
 }) {
   if (items.length === 0) return null;
   return (
     <div className="mb-4">
       <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">{title}</p>
       <div className="flex flex-wrap gap-2">
-        {(items as { id: string; emoji: string; name: string; type: never }[]).map((e) => (
+        {items.map((e) => (
           <div key={e.id} className="group relative">
-            <ElementChip
-              element={e as never}
-              size="sm"
-              draggable
-              onDragStart={(ev) => ev.dataTransfer.setData("text/recraft-id", e.id)}
-              onClick={() => onClick(e.id)}
-              selected={selected.includes(e.id)}
-            />
-            {onInfo && (
-              <button
-                onClick={(ev) => { ev.stopPropagation(); onInfo(e.id); }}
-                className="absolute -top-1 -right-1 hidden h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground shadow group-hover:flex"
-                title="Ver informações"
-              >ℹ</button>
-            )}
+            <div
+              onPointerDown={(ev) => onPick(ev, e.id)}
+              className="cursor-grab touch-none active:cursor-grabbing"
+              title="Arraste para a bancada"
+            >
+              <ElementChip element={e as never} size="sm" />
+            </div>
+            <button
+              onClick={(ev) => {
+                ev.stopPropagation();
+                onInfo(e.id);
+              }}
+              className="absolute -right-1 -top-1 hidden h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground shadow group-hover:flex"
+              title="Ver informações"
+            >
+              ℹ
+            </button>
           </div>
         ))}
-      </div>
-    </div>
-  );
-}
-
-function LastDiscoveries({ onSelect }: { onSelect: (id: string) => void }) {
-  const discovered = useRecraftStore((s) => s.discovered);
-  const recent = Object.values(discovered).filter((d) => d.at > 0).sort((a, b) => b.at - a.at).slice(0, 6);
-  if (recent.length === 0) return null;
-  return (
-    <div className="rounded-2xl border bg-card p-4 shadow-sm">
-      <h3 className="mb-3 text-sm font-semibold">🕒 Descobertas recentes</h3>
-      <div className="flex flex-wrap gap-2">
-        {recent.map((d) => {
-          const el = getElement(d.id)!;
-          return <ElementChip key={d.id} element={el} size="sm" onClick={() => onSelect(d.id)} />;
-        })}
       </div>
     </div>
   );
@@ -267,13 +393,21 @@ function NotificationStack() {
   return (
     <div className="pointer-events-none fixed bottom-4 right-4 z-50 flex w-80 flex-col gap-2">
       {notifications.map((n) => (
-        <div key={n.id} className="pointer-events-auto flex items-start gap-3 rounded-xl border-2 border-primary/40 bg-card p-3 shadow-lg animate-in slide-in-from-right">
+        <div
+          key={n.id}
+          className="pointer-events-auto flex items-start gap-3 rounded-xl border-2 border-primary/40 bg-card p-3 shadow-lg animate-in slide-in-from-right"
+        >
           <span className="text-2xl">{n.emoji ?? (n.type === "achievement" ? "🏆" : "✨")}</span>
           <div className="flex-1">
             <p className="text-sm font-semibold">{n.title}</p>
             {n.subtitle && <p className="text-xs text-muted-foreground">{n.subtitle}</p>}
           </div>
-          <button className="text-xs text-muted-foreground hover:text-foreground" onClick={() => dismissNotification(n.id)}>×</button>
+          <button
+            className="text-xs text-muted-foreground hover:text-foreground"
+            onClick={() => dismissNotification(n.id)}
+          >
+            ×
+          </button>
         </div>
       ))}
     </div>
