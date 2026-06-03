@@ -21,9 +21,11 @@ interface State {
   consecutiveNoHints: number;
   unlockedAchievements: Record<string, number>;
   notifications: { id: string; ts: number; type: "discovery" | "achievement"; title: string; subtitle?: string; emoji?: string }[];
+  currentHintId: string | null;
 
   combine: (a: string, b: string) => { ok: boolean; output?: string; alreadyKnown?: boolean };
   useHint: (id: string, level: 1 | 2 | 3) => void;
+  pickRandomHint: () => string | null;
   toggleFavorite: (id: string) => void;
   markTutorialRead: (id: string) => void;
   markCuriosityRead: (id: string) => void;
@@ -101,6 +103,7 @@ export const useRecraftStore = create<State>()(
       consecutiveNoHints: 0,
       unlockedAchievements: {},
       notifications: [],
+      currentHintId: null,
 
       combine: (a, b) => {
         const output = findRecipe(a, b);
@@ -163,6 +166,29 @@ export const useRecraftStore = create<State>()(
         set((s) => ({ ...s, hintsUsed: { ...s.hintsUsed, [id]: Math.max(s.hintsUsed[id] ?? 0, level) } }));
       },
 
+      pickRandomHint: () => {
+        const s = get();
+        const isValid = (id: string | null) => {
+          if (!id) return false;
+          if (s.discovered[id]) return false;
+          const el = getElement(id);
+          return !!(el && el.hints && el.hints.length > 0);
+        };
+        if (isValid(s.currentHintId)) return s.currentHintId;
+        const candidates = DISCOVERABLE_IDS.filter((id) => {
+          if (s.discovered[id]) return false;
+          const el = getElement(id);
+          return !!(el && el.hints && el.hints.length > 0);
+        });
+        if (candidates.length === 0) {
+          set((st) => ({ ...st, currentHintId: null }));
+          return null;
+        }
+        const pick = candidates[Math.floor(Math.random() * candidates.length)];
+        set((st) => ({ ...st, currentHintId: pick }));
+        return pick;
+      },
+
       toggleFavorite: (id) => {
         set((s) => ({ ...s, favorites: s.favorites.includes(id) ? s.favorites.filter((x) => x !== id) : [...s.favorites, id] }));
       },
@@ -193,6 +219,7 @@ export const useRecraftStore = create<State>()(
           consecutiveNoHints: 0,
           unlockedAchievements: {},
           notifications: [],
+          currentHintId: null,
         } as Partial<State> as State));
       },
     }),
