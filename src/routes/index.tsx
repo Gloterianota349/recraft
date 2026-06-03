@@ -402,7 +402,7 @@ function NotificationStack() {
   const dismissNotification = useRecraftStore((s) => s.dismissNotification);
   useEffect(() => {
     const ids = notifications.map((n) => n.id);
-    const timers = ids.map((id) => setTimeout(() => dismissNotification(id), 5500));
+    const timers = ids.map((id) => setTimeout(() => dismissNotification(id), 1000));
     return () => timers.forEach(clearTimeout);
   }, [notifications, dismissNotification]);
   return (
