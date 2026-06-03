@@ -133,7 +133,6 @@ function GamePage() {
       }
 
       return bestMatch?.item ?? null;
-      return null;
     },
     [board, getDragSize, toCanvas],
   );
