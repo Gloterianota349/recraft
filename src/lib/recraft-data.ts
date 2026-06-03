@@ -77,6 +77,18 @@ export const ELEMENTS: ElementDef[] = [
       "Surge a partir de alumínio reaproveitado.",
       "Uma lata cortada pode ser transformada em algo mais robusto.",
     ] },
+  { id: "recipiente_pet", name: "Recipiente PET", emoji: "🪴", type: "componente", category: "Componentes",
+    hints: [
+      "Este item pode receber terra, sementes ou plantas.",
+      "Surge a partir de uma garrafa plástica muito comum.",
+      "Primeiro transforme uma garrafa em um recipiente antes de decorá-lo.",
+    ] },
+  { id: "assento_reciclado", name: "Assento Reciclado", emoji: "🪑", type: "componente", category: "Componentes",
+    hints: [
+      "Esta estrutura serve de base para um móvel confortável.",
+      "Surge a partir de um resíduo comum em veículos.",
+      "Um pneu pode ser preparado antes de receber o revestimento final.",
+    ] },
 
   // Objetos Finais
   {
@@ -353,14 +365,20 @@ export const RECIPES: Recipe[] = [
   { inputs: ["lata", "tesoura"], output: "est_metalica" },
 
   { inputs: ["cerdas", "cabo"], output: "vassoura_pet" },
-  { inputs: ["garrafa_pet", "tinta"], output: "vaso" },
+  { inputs: ["garrafa_pet", "tesoura"], output: "tiras_pet" },
+  { inputs: ["garrafa_pet", "cola"], output: "recipiente_pet" },
+  { inputs: ["recipiente_pet", "tinta"], output: "vaso" },
+  { inputs: ["recipiente_pet", "barbante"], output: "horta" },
   { inputs: ["vaso", "barbante"], output: "horta" },
   { inputs: ["papel_mache", "tinta"], output: "mascara" },
   { inputs: ["papel_mache", "papelao"], output: "porta_retrato" },
   { inputs: ["est_brinquedo", "tinta"], output: "carrinho" },
+  { inputs: ["papelao", "papel_mache"], output: "maquete" },
   { inputs: ["est_brinquedo", "papel_mache"], output: "maquete" },
   { inputs: ["lata", "tinta"], output: "porta_lapis" },
   { inputs: ["est_metalica", "garrafa_pet"], output: "luminaria" },
+  { inputs: ["pneu", "cola"], output: "assento_reciclado" },
+  { inputs: ["assento_reciclado", "tecido"], output: "puff" },
   { inputs: ["pneu", "tecido"], output: "puff" },
   { inputs: ["pneu", "garrafa_pet"], output: "jardineira" },
 ];
