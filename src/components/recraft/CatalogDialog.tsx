@@ -45,7 +45,7 @@ export function CatalogDialog({ open, onOpenChange, onSelect, onRequestHint }: {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[88vh]">
+      <DialogContent className="flex max-h-[88vh] max-w-4xl flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-2xl">📖 Catálogo RECraft</DialogTitle>
         </DialogHeader>
@@ -67,8 +67,8 @@ export function CatalogDialog({ open, onOpenChange, onSelect, onRequestHint }: {
           <Input placeholder="🔍 Pesquisar nome, categoria, material…" value={q} onChange={(e) => setQ(e.target.value)} className="ml-auto max-w-xs" />
         </div>
 
-        <ScrollArea className="max-h-[50vh] pr-3">
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+        <ScrollArea className="min-h-0 flex-1 pr-3">
+          <div className="grid grid-cols-2 gap-3 pb-2 md:grid-cols-3">
             {filtered.map((e) => <CatalogCard key={e.id} el={e} known={!!discovered[e.id]} fav={favorites.includes(e.id)} onSelect={onSelect} onHint={onRequestHint} />)}
             {filtered.length === 0 && <p className="col-span-full py-8 text-center text-muted-foreground">Nada encontrado.</p>}
           </div>
