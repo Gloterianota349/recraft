@@ -365,7 +365,6 @@ export const RECIPES: Recipe[] = [
   { inputs: ["lata", "tesoura"], output: "est_metalica" },
 
   { inputs: ["cerdas", "cabo"], output: "vassoura_pet" },
-  { inputs: ["garrafa_pet", "tesoura"], output: "tiras_pet" },
   { inputs: ["garrafa_pet", "cola"], output: "recipiente_pet" },
   { inputs: ["recipiente_pet", "tinta"], output: "vaso" },
   { inputs: ["recipiente_pet", "barbante"], output: "horta" },
