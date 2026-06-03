@@ -9,12 +9,13 @@ import { useEffect } from "react";
 
 export function ItemDetailDialog({ id, open, onOpenChange }: { id: string | null; open: boolean; onOpenChange: (v: boolean) => void }) {
   const el = id ? getElement(id) : undefined;
-  const { favorites, toggleFavorite, markTutorialRead, markCuriosityRead } = useRecraftStore();
+  const { favorites, tutorialsRead, toggleFavorite, markTutorialRead, markCuriosityRead } = useRecraftStore();
   useEffect(() => {
     if (open && id) markCuriosityRead(id);
   }, [open, id, markCuriosityRead]);
   if (!el) return null;
   const isFav = favorites.includes(el.id);
+  const isRead = tutorialsRead.includes(el.id);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -72,10 +73,21 @@ export function ItemDetailDialog({ id, open, onOpenChange }: { id: string | null
             {el.tutorial && (
               <section>
                 <Separator className="my-2" />
-                <h4 className="mb-2 font-semibold">📋 Tutorial Completo</h4>
+                <h4 className="mb-2 flex items-center gap-2 font-semibold">
+                  📋 Tutorial Completo
+                  {isRead && (
+                    <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">✓ Lido</span>
+                  )}
+                </h4>
                 <ol className="list-decimal space-y-1 pl-5 text-sm">{el.tutorial.map((s, i) => <li key={i}>{s}</li>)}</ol>
-                <Button size="sm" variant="outline" className="mt-3" onClick={() => markTutorialRead(el.id)}>
-                  Marcar tutorial como lido
+                <Button
+                  size="sm"
+                  variant={isRead ? "default" : "outline"}
+                  className={isRead ? "mt-3 bg-emerald-600 hover:bg-emerald-700" : "mt-3"}
+                  onClick={() => markTutorialRead(el.id)}
+                  disabled={isRead}
+                >
+                  {isRead ? "✓ Tutorial lido" : "Marcar tutorial como lido"}
                 </Button>
               </section>
             )}

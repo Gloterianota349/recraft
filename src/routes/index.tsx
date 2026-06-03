@@ -46,6 +46,7 @@ const ITEM_H = 48;
 function GamePage() {
   const discovered = useRecraftStore((s) => s.discovered);
   const combine = useRecraftStore((s) => s.combine);
+  const pickRandomHint = useRecraftStore((s) => s.pickRandomHint);
   const stats = useRecraftStore(useShallow(selectStats));
 
   const [search, setSearch] = useState("");
@@ -85,12 +86,16 @@ function GamePage() {
 
   const hitTest = useCallback(
     (clientX: number, clientY: number, ignoreIid?: string) => {
-      const { x, y, inside } = toCanvas(clientX, clientY);
+      const { inside } = toCanvas(clientX, clientY);
       if (!inside) return null;
-      for (let i = board.length - 1; i >= 0; i--) {
-        const b = board[i];
-        if (b.iid === ignoreIid) continue;
-        if (x >= b.x && x <= b.x + ITEM_W && y >= b.y && y <= b.y + ITEM_H) return b;
+      const els = document.elementsFromPoint(clientX, clientY);
+      for (const el of els) {
+        const node = (el as HTMLElement).closest?.("[data-iid]") as HTMLElement | null;
+        if (!node) continue;
+        const iid = node.dataset.iid;
+        if (!iid || iid === ignoreIid) continue;
+        const b = board.find((x) => x.iid === iid);
+        if (b) return b;
       }
       return null;
     },
@@ -241,6 +246,7 @@ function GamePage() {
             return (
               <div
                 key={b.iid}
+                data-iid={b.iid}
                 onPointerDown={(e) => startBoardDrag(e, b)}
                 onDoubleClick={(e) => {
                   e.stopPropagation();
@@ -281,12 +287,8 @@ function GamePage() {
 
           <button
             onClick={() => {
-              const candidates = ELEMENTS.filter(
-                (e) => !discovered[e.id] && e.hints && e.hints.length > 0,
-              );
-              if (candidates.length === 0) return;
-              const pick = candidates[Math.floor(Math.random() * candidates.length)];
-              setHintId(pick.id);
+              const pick = pickRandomHint();
+              if (pick) setHintId(pick);
             }}
             className="absolute bottom-4 left-4 z-20 flex items-center gap-2 rounded-full border-2 border-amber-400 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-900 shadow-md transition-all hover:scale-105 hover:bg-amber-100"
             title="Receba uma dica aleatória sobre um item ainda não descoberto"
