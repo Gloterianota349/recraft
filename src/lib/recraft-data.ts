@@ -256,7 +256,7 @@ export const ELEMENTS: ElementDef[] = [
     hints: [
       "Este objeto é muito utilizado em apresentações escolares.",
       "Ele nasce da combinação de dois resíduos de papel.",
-      "Uma estrutura de papelão pode ganhar novos detalhes com papel machê.",
+      "Uma estrutura de papelão pode ganhar novos detalhes com jornal.",
     ],
     explanation: "Maquetes sustentáveis unem aprendizado e prática ambiental em projetos escolares.",
   },
@@ -372,7 +372,7 @@ export const RECIPES: Recipe[] = [
   { inputs: ["papel_mache", "tinta"], output: "mascara" },
   { inputs: ["papel_mache", "papelao"], output: "porta_retrato" },
   { inputs: ["est_brinquedo", "tinta"], output: "carrinho" },
-  { inputs: ["papelao", "papel_mache"], output: "maquete" },
+  { inputs: ["est_brinquedo", "jornal"], output: "maquete" },
   { inputs: ["est_brinquedo", "papel_mache"], output: "maquete" },
   { inputs: ["lata", "tinta"], output: "porta_lapis" },
   { inputs: ["est_metalica", "garrafa_pet"], output: "luminaria" },
