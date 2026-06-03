@@ -62,6 +62,7 @@ function GamePage() {
   const [banner, setBanner] = useState<string | null>(null);
 
   const canvasRef = useRef<HTMLDivElement>(null);
+  const dragPreviewRef = useRef<HTMLDivElement>(null);
   const iidRef = useRef(0);
   const nextIid = () => `b${++iidRef.current}`;
 
@@ -84,10 +85,19 @@ function GamePage() {
     };
   }, []);
 
+  const getDragSize = useCallback(() => {
+    const rect = dragPreviewRef.current?.getBoundingClientRect();
+    return {
+      width: rect?.width ?? ITEM_W,
+      height: rect?.height ?? ITEM_H,
+    };
+  }, []);
+
   const hitTest = useCallback(
-    (clientX: number, clientY: number, ignoreIid?: string) => {
+    (clientX: number, clientY: number, activeDrag: DragState, ignoreIid?: string) => {
       const { inside } = toCanvas(clientX, clientY);
       if (!inside) return null;
+
       const els = document.elementsFromPoint(clientX, clientY);
       for (const el of els) {
         const node = (el as HTMLElement).closest?.("[data-iid]") as HTMLElement | null;
@@ -97,21 +107,47 @@ function GamePage() {
         const b = board.find((x) => x.iid === iid);
         if (b) return b;
       }
+
+      if (!activeDrag) return null;
+
+      const { width: dragW, height: dragH } = getDragSize();
+      const dragLeft = clientX - activeDrag.offX;
+      const dragTop = clientY - activeDrag.offY;
+      let bestMatch: { item: BoardItem; area: number } | null = null;
+
+      for (const item of board) {
+        if (item.iid === ignoreIid) continue;
+        const node = document.querySelector(`[data-iid="${item.iid}"]`) as HTMLElement | null;
+        if (!node) continue;
+
+        const rect = node.getBoundingClientRect();
+        const overlapW = Math.min(dragLeft + dragW, rect.right) - Math.max(dragLeft, rect.left);
+        const overlapH = Math.min(dragTop + dragH, rect.bottom) - Math.max(dragTop, rect.top);
+
+        if (overlapW <= 0 || overlapH <= 0) continue;
+
+        const area = overlapW * overlapH;
+        if (!bestMatch || area > bestMatch.area) {
+          bestMatch = { item, area };
+        }
+      }
+
+      return bestMatch?.item ?? null;
       return null;
     },
-    [board, toCanvas],
+    [board, getDragSize, toCanvas],
   );
 
   useEffect(() => {
     if (!drag) return;
     const onMove = (e: PointerEvent) => {
       setDrag((d) => (d ? { ...d, cx: e.clientX, cy: e.clientY } : d));
-      const t = hitTest(e.clientX, e.clientY, drag.source === "board" ? drag.iid : undefined);
+      const t = hitTest(e.clientX, e.clientY, drag, drag.source === "board" ? drag.iid : undefined);
       setHoverIid(t?.iid ?? null);
     };
     const onUp = (e: PointerEvent) => {
       const { x, y, inside } = toCanvas(e.clientX, e.clientY);
-      const target = hitTest(e.clientX, e.clientY, drag.source === "board" ? drag.iid : undefined);
+      const target = hitTest(e.clientX, e.clientY, drag, drag.source === "board" ? drag.iid : undefined);
 
       if (target) {
         const res = combine(drag.elementId, target.id);
@@ -133,8 +169,9 @@ function GamePage() {
           setFlash({ iid: target.iid, kind: "fail" });
         }
       } else if (inside) {
-        const px = Math.max(0, Math.min(x - drag.offX, (canvasRef.current?.clientWidth ?? 1) - ITEM_W));
-        const py = Math.max(0, Math.min(y - drag.offY, (canvasRef.current?.clientHeight ?? 1) - ITEM_H));
+        const { width: dragW, height: dragH } = getDragSize();
+        const px = Math.max(0, Math.min(x - drag.offX, Math.max(0, (canvasRef.current?.clientWidth ?? 1) - dragW)));
+        const py = Math.max(0, Math.min(y - drag.offY, Math.max(0, (canvasRef.current?.clientHeight ?? 1) - dragH)));
         if (drag.source === "sidebar") {
           setBoard((prev) => [...prev, { iid: nextIid(), id: drag.elementId, x: px, y: py }]);
         } else {
@@ -162,11 +199,12 @@ function GamePage() {
 
   const startSidebarDrag = (e: React.PointerEvent, elementId: string) => {
     e.preventDefault();
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     setDrag({
       source: "sidebar",
       elementId,
-      offX: ITEM_W / 2,
-      offY: ITEM_H / 2,
+      offX: e.clientX - rect.left,
+      offY: e.clientY - rect.top,
       cx: e.clientX,
       cy: e.clientY,
     });
@@ -332,7 +370,7 @@ function GamePage() {
             className="pointer-events-none fixed z-50 -translate-x-1/2 -translate-y-1/2 opacity-90"
             style={{ left: drag.cx, top: drag.cy }}
           >
-            <div className="scale-110 drop-shadow-xl">
+            <div ref={dragPreviewRef} className="scale-110 drop-shadow-xl">
               <ElementChip element={dragEl} size="md" />
             </div>
           </div>
