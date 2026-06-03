@@ -27,6 +27,7 @@ export function CatalogDialog({ open, onOpenChange, onSelect, onRequestHint }: {
 }) {
   const discovered = useRecraftStore((s) => s.discovered);
   const favorites = useRecraftStore((s) => s.favorites);
+  const tutorialsRead = useRecraftStore((s) => s.tutorialsRead);
   const stats = useRecraftStore(useShallow(selectStats));
   const [filter, setFilter] = useState<(typeof FILTERS)[number]["id"]>("all");
   const [q, setQ] = useState("");
@@ -67,9 +68,9 @@ export function CatalogDialog({ open, onOpenChange, onSelect, onRequestHint }: {
           <Input placeholder="🔍 Pesquisar nome, categoria, material…" value={q} onChange={(e) => setQ(e.target.value)} className="ml-auto max-w-xs" />
         </div>
 
-        <ScrollArea className="min-h-0 flex-1 pr-3">
+        <ScrollArea className="h-[55vh] pr-3">
           <div className="grid grid-cols-2 gap-3 pb-2 md:grid-cols-3">
-            {filtered.map((e) => <CatalogCard key={e.id} el={e} known={!!discovered[e.id]} fav={favorites.includes(e.id)} onSelect={onSelect} onHint={onRequestHint} />)}
+            {filtered.map((e) => <CatalogCard key={e.id} el={e} known={!!discovered[e.id]} fav={favorites.includes(e.id)} tutorialRead={tutorialsRead.includes(e.id)} onSelect={onSelect} onHint={onRequestHint} />)}
             {filtered.length === 0 && <p className="col-span-full py-8 text-center text-muted-foreground">Nada encontrado.</p>}
           </div>
         </ScrollArea>
@@ -87,7 +88,7 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
-function CatalogCard({ el, known, fav, onSelect, onHint }: { el: ElementDef; known: boolean; fav: boolean; onSelect: (id: string) => void; onHint: (id: string) => void }) {
+function CatalogCard({ el, known, fav, tutorialRead, onSelect, onHint }: { el: ElementDef; known: boolean; fav: boolean; tutorialRead: boolean; onSelect: (id: string) => void; onHint: (id: string) => void }) {
   if (!known) {
     return (
       <div className="flex flex-col items-center gap-2 rounded-xl border-2 border-dashed border-muted bg-muted/30 p-4">
@@ -101,7 +102,14 @@ function CatalogCard({ el, known, fav, onSelect, onHint }: { el: ElementDef; kno
     <button onClick={() => onSelect(el.id)} className={cn("flex flex-col items-center gap-2 rounded-xl border-2 bg-card p-4 text-left transition-all hover:-translate-y-0.5 hover:border-primary hover:shadow")}>
       <div className="flex w-full items-center justify-between">
         <span className="text-3xl">{el.emoji}</span>
-        {fav && <span className="text-amber-500">★</span>}
+        <div className="flex items-center gap-1">
+          {el.tutorial && (
+            <span title={tutorialRead ? "Tutorial lido" : "Tutorial não lido"} className={cn("text-xs", tutorialRead ? "text-emerald-600" : "opacity-40")}>
+              {tutorialRead ? "📗" : "📕"}
+            </span>
+          )}
+          {fav && <span className="text-amber-500">★</span>}
+        </div>
       </div>
       <p className="self-start font-semibold leading-tight">{el.name}</p>
       {el.impact && <p className="self-start text-xs">{"🌿".repeat(el.impact)}</p>}
