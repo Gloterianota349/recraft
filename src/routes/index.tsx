@@ -14,7 +14,7 @@ import { AchievementsDialog } from "@/components/recraft/AchievementsDialog";
 import { ItemDetailDialog } from "@/components/recraft/ItemDetailDialog";
 import { HintDialog } from "@/components/recraft/HintDialog";
 import { cn } from "@/lib/utils";
-import { ChevronLeft, ChevronRight, Trash2, Sparkles } from "lucide-react";
+import { ChevronLeft, ChevronRight, Trash2, Sparkles, Lightbulb } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -272,12 +272,27 @@ function GamePage() {
           <button
             onClick={() => setSidebarOpen((v) => !v)}
             className={cn(
-              "absolute top-1/2 z-20 -translate-y-1/2 rounded-l-lg border bg-card p-1.5 shadow-md transition-all hover:bg-accent",
-              sidebarOpen ? "right-[340px]" : "right-0",
+              "absolute right-0 top-1/2 z-20 -translate-y-1/2 rounded-l-lg border bg-card p-1.5 shadow-md transition-all hover:bg-accent",
             )}
             title={sidebarOpen ? "Recolher inventário" : "Abrir inventário"}
           >
             {sidebarOpen ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+          </button>
+
+          <button
+            onClick={() => {
+              const candidates = ELEMENTS.filter(
+                (e) => !discovered[e.id] && e.hints && e.hints.length > 0,
+              );
+              if (candidates.length === 0) return;
+              const pick = candidates[Math.floor(Math.random() * candidates.length)];
+              setHintId(pick.id);
+            }}
+            className="absolute bottom-4 left-4 z-20 flex items-center gap-2 rounded-full border-2 border-amber-400 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-900 shadow-md transition-all hover:scale-105 hover:bg-amber-100"
+            title="Receba uma dica aleatória sobre um item ainda não descoberto"
+          >
+            <Lightbulb className="h-4 w-4" />
+            Dica aleatória
           </button>
         </div>
 
