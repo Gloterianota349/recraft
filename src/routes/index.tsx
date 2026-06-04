@@ -399,6 +399,7 @@ function GamePage() {
       <AchievementsDialog open={achOpen} onOpenChange={setAchOpen} />
       <ItemDetailDialog id={detailId} open={!!detailId} onOpenChange={(v) => !v && setDetailId(null)} />
       <HintDialog id={hintId} open={!!hintId} onOpenChange={(v) => !v && setHintId(null)} />
+      <AiMentorDialog open={mentorOpen} onOpenChange={setMentorOpen} />
     </div>
   );
 }
