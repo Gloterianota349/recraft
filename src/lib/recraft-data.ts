@@ -65,9 +65,9 @@ export const ELEMENTS: ElementDef[] = [
       "Surge a partir de papel reutilizado.",
       "Jornal e cola são os ingredientes principais.",
     ] },
-  { id: "est_brinquedo", name: "Estrutura de Brinquedo", emoji: "🧱", type: "componente", category: "Componentes",
+  { id: "est_brinquedo", name: "Estrutura de Papelão", emoji: "🧱", type: "componente", category: "Componentes",
     hints: [
-      "Este item serve como base para algo divertido.",
+      "Este item serve como base para diversas criações.",
       "Sua origem está em embalagens de papelão.",
       "Peças cortadas podem criar algo novo.",
     ] },
@@ -88,6 +88,12 @@ export const ELEMENTS: ElementDef[] = [
       "Esta estrutura serve de base para um móvel confortável.",
       "Surge a partir de um resíduo comum em veículos.",
       "Um pneu pode ser preparado antes de receber o revestimento final.",
+    ] },
+  { id: "est_maquete", name: "Estrutura de Maquete", emoji: "🏗️", type: "componente", category: "Componentes",
+    hints: [
+      "Esta base já tem volume e textura, pronta para receber cor.",
+      "Combina uma estrutura de papelão com massa moldável.",
+      "Una uma estrutura de papelão ao papel machê para formá-la.",
     ] },
 
   // Objetos Finais
@@ -255,8 +261,8 @@ export const ELEMENTS: ElementDef[] = [
     ],
     hints: [
       "Este objeto é muito utilizado em apresentações escolares.",
-      "Ele nasce da combinação de dois resíduos de papel.",
-      "Uma estrutura de papelão pode ganhar novos detalhes com jornal.",
+      "Ele nasce de uma estrutura preparada que recebe acabamento colorido.",
+      "Primeiro forme uma estrutura de maquete, depois aplique tinta.",
     ],
     explanation: "Maquetes sustentáveis unem aprendizado e prática ambiental em projetos escolares.",
   },
@@ -372,8 +378,8 @@ export const RECIPES: Recipe[] = [
   { inputs: ["papel_mache", "tinta"], output: "mascara" },
   { inputs: ["papel_mache", "papelao"], output: "porta_retrato" },
   { inputs: ["est_brinquedo", "tinta"], output: "carrinho" },
-  { inputs: ["est_brinquedo", "jornal"], output: "maquete" },
-  { inputs: ["est_brinquedo", "papel_mache"], output: "maquete" },
+  { inputs: ["est_brinquedo", "papel_mache"], output: "est_maquete" },
+  { inputs: ["est_maquete", "tinta"], output: "maquete" },
   { inputs: ["lata", "tinta"], output: "porta_lapis" },
   { inputs: ["est_metalica", "garrafa_pet"], output: "luminaria" },
   { inputs: ["pneu", "cola"], output: "assento_reciclado" },
