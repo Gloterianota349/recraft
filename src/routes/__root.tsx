@@ -77,14 +77,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
+      { title: "RECraft" },
+      { name: "description", content: "Real Game Builder creates interactive games based on provided specifications." },
       { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { property: "og:title", content: "RECraft" },
+      { property: "og:description", content: "Real Game Builder creates interactive games based on provided specifications." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "RECraft" },
+      { name: "twitter:description", content: "Real Game Builder creates interactive games based on provided specifications." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/4135dc9d-8c3a-4f5b-97a5-6ab0d9726b2e/id-preview-a487b411--22a4adda-8d55-412f-b581-5009da0180f0.lovable.app-1780535545073.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/4135dc9d-8c3a-4f5b-97a5-6ab0d9726b2e/id-preview-a487b411--22a4adda-8d55-412f-b581-5009da0180f0.lovable.app-1780535545073.png" },
     ],
     links: [
       {
