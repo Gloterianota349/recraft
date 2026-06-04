@@ -1,12 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { ELEMENTS, DISCOVERABLE_IDS, getElement } from "@/lib/recraft-data";
 import { useRecraftStore } from "@/lib/recraft-store";
-import { useShallow } from "zustand/react/shallow";
 import { Send, Sparkles, Loader2 } from "lucide-react";
 
 interface Msg { role: "user" | "assistant"; content: string }
@@ -17,11 +15,10 @@ const GREETING: Msg = {
 };
 
 export function AiMentorDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
-  const { discovered, stats } = useRecraftStore(
-    useShallow((s) => ({
-      discovered: s.discovered,
-      stats: { totalDiscovered: Object.keys(s.discovered).length, totalDiscoverable: DISCOVERABLE_IDS.length },
-    })),
+  const discovered = useRecraftStore((s) => s.discovered);
+  const stats = useMemo(
+    () => ({ totalDiscovered: Object.keys(discovered).length, totalDiscoverable: DISCOVERABLE_IDS.length }),
+    [discovered],
   );
   const [messages, setMessages] = useState<Msg[]>([GREETING]);
   const [input, setInput] = useState("");
