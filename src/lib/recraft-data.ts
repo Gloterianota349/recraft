@@ -65,9 +65,9 @@ export const ELEMENTS: ElementDef[] = [
       "Surge a partir de papel reutilizado.",
       "Jornal e cola são os ingredientes principais.",
     ] },
-  { id: "est_brinquedo", name: "Estrutura de Brinquedo", emoji: "🧱", type: "componente", category: "Componentes",
+  { id: "est_brinquedo", name: "Estrutura de Papelão", emoji: "🧱", type: "componente", category: "Componentes",
     hints: [
-      "Este item serve como base para algo divertido.",
+      "Este item serve como base para diversas criações.",
       "Sua origem está em embalagens de papelão.",
       "Peças cortadas podem criar algo novo.",
     ] },
@@ -88,6 +88,12 @@ export const ELEMENTS: ElementDef[] = [
       "Esta estrutura serve de base para um móvel confortável.",
       "Surge a partir de um resíduo comum em veículos.",
       "Um pneu pode ser preparado antes de receber o revestimento final.",
+    ] },
+  { id: "est_maquete", name: "Estrutura de Maquete", emoji: "🏗️", type: "componente", category: "Componentes",
+    hints: [
+      "Esta base já tem volume e textura, pronta para receber cor.",
+      "Combina uma estrutura de papelão com massa moldável.",
+      "Una uma estrutura de papelão ao papel machê para formá-la.",
     ] },
 
   // Objetos Finais
