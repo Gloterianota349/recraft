@@ -261,8 +261,8 @@ export const ELEMENTS: ElementDef[] = [
     ],
     hints: [
       "Este objeto é muito utilizado em apresentações escolares.",
-      "Ele nasce da combinação de dois resíduos de papel.",
-      "Uma estrutura de papelão pode ganhar novos detalhes com jornal.",
+      "Ele nasce de uma estrutura preparada que recebe acabamento colorido.",
+      "Primeiro forme uma estrutura de maquete, depois aplique tinta.",
     ],
     explanation: "Maquetes sustentáveis unem aprendizado e prática ambiental em projetos escolares.",
   },
