@@ -15,6 +15,7 @@ import { ItemDetailDialog } from "@/components/recraft/ItemDetailDialog";
 import { HintDialog } from "@/components/recraft/HintDialog";
 import { cn } from "@/lib/utils";
 import { ChevronLeft, ChevronRight, Trash2, Sparkles, Lightbulb } from "lucide-react";
+import { AiMentorDialog } from "@/components/recraft/AiMentorDialog";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -52,6 +53,7 @@ function GamePage() {
   const [search, setSearch] = useState("");
   const [catalogOpen, setCatalogOpen] = useState(false);
   const [achOpen, setAchOpen] = useState(false);
+  const [mentorOpen, setMentorOpen] = useState(false);
   const [detailId, setDetailId] = useState<string | null>(null);
   const [hintId, setHintId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -243,6 +245,13 @@ function GamePage() {
             <Badge variant="secondary" className="gap-1">🏆 {stats.achievementsUnlocked}/{stats.achievementsTotal}</Badge>
             <Button size="sm" variant="outline" onClick={() => setCatalogOpen(true)}>📖 Catálogo</Button>
             <Button size="sm" variant="outline" onClick={() => setAchOpen(true)}>🏆 Conquistas</Button>
+            <Button
+              size="sm"
+              onClick={() => setMentorOpen(true)}
+              className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white hover:from-emerald-600 hover:to-teal-700"
+            >
+              <Sparkles className="mr-1 h-3.5 w-3.5" /> Mentor IA
+            </Button>
             <Button size="sm" variant="outline" onClick={() => setBoard([])} disabled={board.length === 0}>
               <Trash2 className="mr-1 h-3.5 w-3.5" /> Limpar
             </Button>
