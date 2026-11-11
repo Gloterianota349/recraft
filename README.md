@@ -425,14 +425,6 @@ bun run build
 bun run preview
 ```
 
-### Sobre os indicadores ambientais
-
-Os indicadores de resíduos reaproveitados são estimativas didáticas associadas às receitas e aos objetos descobertos no jogo. Eles representam a lógica educativa da experiência e não medições físicas de materiais efetivamente reciclados.
-
-### Sobre o funcionamento da IA
-
-O Mentor Ecológico depende de uma chave válida, disponibilidade do gateway e créditos de utilização. A aplicação trata situações como limite de requisições, créditos insuficientes e falhas de comunicação.
-
 ---
 
 ## 🔭 Possíveis evoluções
@@ -451,14 +443,6 @@ Algumas possibilidades para ampliar o projeto:
 - [ ] Expansão do catálogo com mais objetos e tutoriais.
 - [ ] Integração com fontes externas de conteúdo ambiental.
 - [ ] Testes automatizados das mecânicas e da integração com IA.
-
-## 🌎 Impacto educacional esperado
-
-O RECraft busca mostrar que sustentabilidade também pode ser aprendida por meio da experimentação.
-
-Ao transformar materiais cotidianos em possibilidades de criação, o jogo incentiva uma mudança de perspectiva: aquilo que normalmente seria descartado pode representar uma oportunidade de inovação, aprendizado e reutilização.
-
-A combinação entre gamificação, conteúdo educativo e inteligência artificial permite construir uma experiência na qual o jogador aprende enquanto explora, cria e descobre.
 
 ## 👨‍💻 Autor
 
